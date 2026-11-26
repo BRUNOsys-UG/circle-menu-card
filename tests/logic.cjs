@@ -166,6 +166,53 @@ async function run(source, baseline) {
       let thrown=false;try{helpers.validate(cfg)}catch{thrown=true} assert(thrown,'invalid config accepted');
     }
   });
+  check('contextual outer rings switch independently and retain inner geometry',()=>{
+    const a={icon:'mdi:lightbulb',secondary:{radius:190,menu_background_color:'#aabbcc',items:[{icon:'mdi:lamp',action:{action:'call-service',service:'light.turn_on',service_data:{entity_id:'light.a'}}}]}};
+    const b={icon:'mdi:music',action:{action:'expand'},secondary:{radius:230,item_size:54,menu_background_color:'#123456',items:[{icon:'mdi:play',action:{action:'call-service',service:'media_player.media_play',service_data:{entity_id:'media_player.b'}}},{icon:'mdi:stop',action:{action:'none'}}]}};
+    const c=make({items:[a,b,serviceItem],secondary:{items:[{icon:'mdi:home',action:{action:'none'}}]}});
+    const inner=c._entries.filter(e=>!e.outer);
+    const outer=c._entries.filter(e=>e.outer);
+    const visible=()=>outer.filter(e=>!e.node.hidden).map(e=>e.icon.getAttribute('icon'));
+    const coordinates=()=>inner.map(e=>[e.node.style.getPropertyValue('--x'),e.node.style.getPropertyValue('--y')]);
+    main(c).event('click'); same(visible(),['mdi:home'],'default');
+    const original=coordinates();
+    inner[0].node.event('click'); same(visible(),['mdi:lamp'],'first own ring');
+    assert(c._open&&c._outer,'both open'); same(c._menu.style.getPropertyValue('--cm-outer-color'),'#aabbcc','first color');
+    const first=outer.find(e=>e.icon.getAttribute('icon')==='mdi:lamp');
+    first.node.event('click'); same(calls.at(-1),['light','turn_on',{entity_id:'light.a'}],'first service');
+    inner[1].node.event('click'); same(visible(),['mdi:play','mdi:stop'],'second own ring');
+    same(coordinates(),original,'inner positions unchanged');
+    same(c._menu.style.getPropertyValue('--cm-outer-color'),'#123456','second color');
+    const count=calls.length; first.node.event('click'); same(calls.length,count,'inactive group cannot execute');
+    outer.find(e=>e.icon.getAttribute('icon')==='mdi:play').node.event('click');
+    same(calls.at(-1),['media_player','media_play',{entity_id:'media_player.b'}],'second service');
+    same(inner[1].node.getAttribute('aria-expanded'),'true','selected');
+    inner[1].node.event('click'); assert(c._open&&!c._outer,'toggle outer only');
+    inner[0].node.event('click'); assert(c._outer,'reopen first');
+    main(c).event('click'); main(c).event('click'); same(visible(),['mdi:home'],'reset to default');
+    c.disconnectedCallback();
+  });
+  check('per-item rings need no global ring and support hold expand without replacing tap',()=>{
+    const c=make({items:[{...serviceItem,hold_action:{action:'expand'},secondary:{items:[{icon:'mdi:home',action:{action:'none'}}]}}]});
+    main(c).event('click'); assert(!c._outer,'no default ring');
+    item(c).event('click'); same(calls.at(-1),['light','turn_on',{entity_id:'light.a'}],'original tap');
+    item(c).event('pointerdown'); advance(500); assert(c._outer,'hold expands');
+    item(c).event('pointerup'); item(c).event('click'); assert(c._outer,'no duplicate tap');
+    c.disconnectedCallback();
+  });
+  check('hidden conditional parent closes its own ring',()=>{
+    const c=make({items:[{conditions:[{entity:'light.a',state:'on'}],secondary:{items:[serviceItem]}}]});
+    c.hass=hass({'light.a':{state:'on'}}); main(c).event('click'); item(c).event('click');
+    assert(c._outer,'opened'); c.hass=hass({'light.a':{state:'off'}});
+    assert(!c._outer&&c._entries.every(e=>e.node.hidden),'conditional parent and children hidden');
+    c.disconnectedCallback();
+  });
+  check('validate item-specific outer ring and reject third level',()=>{
+    helpers.validate({items:[{secondary:{items:[serviceItem]}}]});
+    for(const cfg of [{items:[{secondary:[]}]},{items:[{secondary:{open:'auto'}}]},{items:[{secondary:{items:[{secondary:{items:[]}}]}}]},{secondary:{items:[{secondary:{items:[]}}]}}]) {
+      let thrown=false;try{helpers.validate(cfg)}catch{thrown=true} assert(thrown,'invalid nested config accepted');
+    }
+  });
   return passed;
 }
 module.exports = run;

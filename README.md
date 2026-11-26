@@ -140,6 +140,50 @@ secondary:
 
 With `secondary.open: auto` (the default), both rings open with one tap. With `manual`, an `expand` action toggles the outer ring while the inner ring stays open. `swipe_to_expand: true` opens both rings by swiping inward from the main button, toward the center of the screen. All options are optional. Closing the main menu closes both rings.
 
+
+### An individual outer ring for each inner item
+
+In addition to the global `secondary` ring, every inner item can define its own independent `secondary` configuration. All ring styling, geometry, state rules and items are supported. The global ring remains optional and works as before.
+
+```yaml
+type: custom:circle-menu-card
+items:
+  - icon: mdi:lightbulb-group
+    alt: Lights
+    secondary:
+      menu_background_color: '#85651b'
+      radius: 200
+      items:
+        - icon: mdi:lightbulb
+          entity: light.living_room
+          action:
+            action: toggle
+        - icon: mdi:ceiling-light
+          entity: light.kitchen
+          action:
+            action: toggle
+  - icon: mdi:music
+    alt: Media
+    action:
+      action: expand
+    secondary:
+      menu_background_color: '#175579'
+      radius: 220
+      items:
+        - icon: mdi:play-pause
+          action:
+            action: perform-action
+            perform_action: media_player.media_play_pause
+            target:
+              entity_id: media_player.living_room
+```
+
+Tap Lights or Media to open that item's own outer ring. Tapping the selected inner item again closes only the outer ring; tapping another replaces it directly. The inner buttons stay in place. Closing the whole menu resets the selection to the global ring (if configured).
+
+If an item has no `action` or `tap_action`, its own ring opens on tap automatically. An explicitly configured action retains its meaning; use `action: { action: expand }` or assign expand to a hold or double-tap action to open the ring without replacing another gesture. An expand action on an inner item without its own ring still controls the global ring. An expand action on an outer item closes the current outer ring. Inactive groups cannot receive actions, and if a conditional inner item disappears its outer ring closes.
+
+The per-item ring supports `items`, `radius`, `item_size`, `opening_angle`, `menu_background_color`, `icon_color`, `item_background_color`, `item_active_color` and `positive_states`. Opening mode and swipe configuration belong to the global ring only. A third level is intentionally rejected. In the visual editor, choose **Add own outer ring** inside any inner item.
+
 ### Additional card options
 
 | Key | Meaning / default |

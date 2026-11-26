@@ -94,6 +94,30 @@ def suite(browser, name):
     x,y=r["x"]+r["width"]/2,r["y"]+r["height"]/2
     new.mouse.move(x,y);new.mouse.down();new.mouse.move(x-55,y-55,steps=5);new.mouse.up()
     assert new.locator("circle-menu-card .circular-menu").evaluate("n=>n.classList.contains('cm-outer-open')")
+    # Distinct outer rings are selected by inner buttons, without moving the latter.
+    new.evaluate("cfg=>window.make(cfg)",{"items":[
+        {"icon":"mdi:lightbulb","secondary":{"menu_background_color":"#aabbcc","items":[ITEM]}},
+        {"icon":"mdi:music","action":{"action":"expand"},"secondary":{"radius":240,"item_size":52,"menu_background_color":"#123456","items":[{"icon":"mdi:play","action":{"action":"more-info","entity":"media_player.b"}}]}}
+    ]})
+    main=new.locator("circle-menu-card .floating-btn")
+    main.click()
+    inner=new.locator("circle-menu-card .menu-item:not(.cm-outer)")
+    original=[x.bounding_box() for x in inner.all()]
+    inner.first.click()
+    outer=new.locator("circle-menu-card .cm-outer:visible")
+    assert outer.count()==1
+    outer.click()
+    assert new.evaluate("calls.at(-1)") == ["light","turn_on",{"entity_id":"light.a"}]
+    inner.nth(1).click()
+    assert outer.count()==1
+    assert outer.locator("ha-icon").get_attribute("icon")=="mdi:play"
+    assert [x.bounding_box() for x in inner.all()]==original
+    assert new.locator("circle-menu-card .circular-menu").evaluate("n=>n.style.getPropertyValue('--cm-outer-color')")=="#123456"
+    outer.click()
+    assert new.evaluate("info.at(-1)")=="media_player.b"
+    inner.nth(1).click()
+    assert new.locator("circle-menu-card .circular-menu").evaluate("n=>!n.classList.contains('cm-outer-open')&&n.classList.contains('active')")
+    main.click()
     # Verify reordering retains field edits, including unknown keys.
     new.evaluate("""()=>{card.remove();const e=document.createElement('circle-menu-card-editor');
     e.setConfig({items:[{icon:'mdi:home',alt:'A',extra:'keep',action:{action:'none'}},{icon:'mdi:lightbulb',alt:'B',action:{action:'none'}}]});
@@ -105,6 +129,16 @@ def suite(browser, name):
     panels.first.get_by_role("button",name="↓ Move down").click()
     assert new.evaluate("edited.items[1].alt")=="Edited"
     assert new.evaluate("edited.items[1].extra")=="keep"
+    # Configure a contextual ring in the actual editor and retain the original item.
+    panels.first.locator("summary").click()
+    panels.first.get_by_role("button",name="Add own outer ring").click()
+    assert new.evaluate("edited.items[0].action.action")=="expand"
+    own_ring=new.locator("circle-menu-card-editor details").filter(has=new.locator("summary",has_text="Own outer ring"))
+    ring_summary=new.locator("circle-menu-card-editor summary").filter(has_text="Own outer ring")
+    assert ring_summary.count()==1
+    ring_summary.locator("..").get_by_role("button",name="Add item",exact=True).click()
+    assert new.evaluate("edited.items[0].secondary.items.length")==1
+    assert new.evaluate("edited.items[0].alt")=="B"
     new.close()
     print("PASS",name,"v1 geometry (16 configurations), ring hit targets, legacy service, state, timer, swipe, editor")
 

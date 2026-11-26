@@ -1,7 +1,7 @@
 /* Circle Menu Card v2 — dependency-free, backward-compatible Home Assistant card. */
 (() => {
 'use strict';
-const VERSION = '2.0.0';
+const VERSION = '2.0.0-beta.2';
 const POSITIVE_STATES = [true, 'true', 'on', 'open', 'active', 'detected', 'occupied', 'unlocked', 'home', 'above_horizon', 'ready'];
 const POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
 const ACTIONS = ['none', 'menu', 'expand', 'navigate', 'call-service', 'perform-action', 'toggle', 'more-info', 'url'];
@@ -158,8 +158,8 @@ const CSS_TEXT = `
         }
         .circular-menu .cm-badge[hidden] { display: none; }
         .circular-menu.cm-custom-size .floating-btn,
-        .circular-menu.cm-custom-size .menu-item { display: flex; align-items: center; justify-content: center; }
-        .circular-menu.cm-custom-size .menu-item[hidden] { display: none; }
+        .circular-menu.cm-custom-size .menu-item, .circular-menu .menu-item.cm-context-size { display: flex; align-items: center; justify-content: center; }
+        .circular-menu.cm-custom-size .menu-item[hidden], .circular-menu .menu-item.cm-context-size[hidden] { display: none; }
         .circular-menu.cm-custom-size.active .floating-btn ha-icon.close { display: inline-block; }
         .cm-error { position: fixed; bottom: 5em; right: 1em; max-width: min(24em, 85vw);
           background: var(--card-background-color, white); color: var(--error-color, #b00020);
@@ -188,7 +188,16 @@ function validate(config) {
   if (config.json_config !== undefined && typeof config.json_config !== 'string') throw new Error('json_config must be a URL');
   if (config.secondary !== undefined && !record(config.secondary)) throw new Error('secondary must be an object');
   if (config.secondary?.open !== undefined && !['auto', 'manual'].includes(config.secondary.open)) throw new Error('secondary.open must be auto or manual');
-  for (const scope of [config, config.secondary].filter(Boolean)) {
+  const scopes = [config, config.secondary].filter(Boolean);
+  if (Array.isArray(config.items)) {
+    for (const item of config.items) {
+      if (!record(item) || item.secondary === undefined) continue;
+      if (!record(item.secondary)) throw new Error('Item secondary must be an object');
+      if (item.secondary.open !== undefined || item.secondary.swipe_to_expand !== undefined) throw new Error('Item secondary opens via the parent action; open/swipe_to_expand are global options');
+      scopes.push(item.secondary);
+    }
+  }
+  for (const scope of scopes) {
     if (scope.items !== undefined && !Array.isArray(scope.items)) throw new Error('items must be an array');
     if (scope.positive_states !== undefined && !Array.isArray(scope.positive_states)) throw new Error('positive_states must be an array');
     for (const key of ['radius', 'item_size', 'button_size', 'opening_angle']) {
@@ -196,6 +205,7 @@ function validate(config) {
     }
     for (const item of scope.items || []) {
       if (!record(item)) throw new Error('Each menu item must be an object');
+      if (scope !== config && item.secondary !== undefined) throw new Error('Only inner items can define a secondary ring');
       if (item.positive_states !== undefined && !Array.isArray(item.positive_states)) throw new Error('Item positive_states must be an array');
       if (item.conditions !== undefined && !Array.isArray(item.conditions)) throw new Error('Item conditions must be an array');
       if (item.states !== undefined && !record(item.states)) throw new Error('Item states must be an object');
@@ -294,6 +304,7 @@ class CircleMenuCard extends HTMLElement {
     this._entries = [];
     this._open = false;
     this._outer = false;
+    this._outerScope = null;
     this._timers = new Set();
     this._gestures = [];
     this._generation = 0;
@@ -383,18 +394,36 @@ class CircleMenuCard extends HTMLElement {
     this._open = false; this._outer = false; this._hovering = false;
     this._cancel(this._closeTimer); this._closeTimer = null;
     for (const cancel of this._gestures) cancel(false);
-    this._syncOpen();
+    const fallback = this._localConfig.secondary || null;
+    if (this._outerScope !== fallback) {
+      this._outerScope = fallback; this._refresh();
+    } else this._syncOpen();
   }
   _toggle() {
     if (this._open) { this._close(); return; }
     this._open = true;
-    this._outer = Boolean(this._localConfig.secondary && this._localConfig.secondary.open !== 'manual');
-    this._syncOpen(); this._resetCloseTimer();
+    const fallback = this._localConfig.secondary || null;
+    this._selectOuter(fallback, Boolean(fallback && fallback.open !== 'manual'));
   }
-  _expand() {
-    if (!this._localConfig.secondary) return;
-    this._open = true; this._outer = !this._outer;
-    this._syncOpen(); this._resetCloseTimer();
+  _selectOuter(scope, open) {
+    if (scope !== this._outerScope || !open) {
+      for (const entry of this._entries) {
+        if (entry.outer && (entry.scope !== scope || !open)) entry.cancelGesture?.();
+      }
+    }
+    this._outerScope = scope;
+    this._outer = Boolean(scope && open);
+    this._refresh(); this._resetCloseTimer();
+  }
+  _expand(entry) {
+    // Inner item-specific rings override the global ring only for this action.
+    const scope = entry && !entry.outer && entry.item.secondary
+      ? entry.item.secondary
+      : (entry?.outer ? entry.scope : this._localConfig.secondary || this._outerScope);
+    if (!scope) return;
+    const open = !(this._outer && this._outerScope === scope);
+    this._open = true;
+    this._selectOuter(scope, open);
   }
   _syncOpen() {
     if (!this._menu) return;
@@ -406,6 +435,7 @@ class CircleMenuCard extends HTMLElement {
       const accessible = this._open && (!entry.outer || this._outer) && !entry.node.hidden;
       entry.node.tabIndex = accessible ? 0 : -1;
       entry.node.setAttribute('aria-hidden', String(!accessible));
+      if (!entry.outer && entry.item.secondary) entry.node.setAttribute('aria-expanded', String(this._open && this._outer && this._outerScope === entry.item.secondary));
     }
   }
   _render() {
@@ -413,6 +443,7 @@ class CircleMenuCard extends HTMLElement {
     for (const cancel of this._gestures) cancel();
     this._gestures = []; this._open = false; this._outer = false; this._hovering = false;
     const config = this._localConfig;
+    this._outerScope = config.secondary || null;
     const style = element('style', null, CSS_TEXT);
     this._menu = element('div', 'circular-menu');
     this._menu.id = 'circularMenu';
@@ -445,10 +476,11 @@ class CircleMenuCard extends HTMLElement {
     this._errorNode.setAttribute('role', 'alert'); this._errorNode.hidden = true;
     this.shadowRoot.replaceChildren(style, this._menu, this._errorNode);
     this._entries = [];
-    for (const [scope, outer] of [[config.secondary, true], [config, false]]) {
-      if (!scope) continue;
-      (scope.items || []).forEach((item, index) => this._addItem(item, scope, outer, index));
+    const outerScopes = [config.secondary, ...(config.items || []).map(item => item.secondary)].filter(Boolean);
+    for (const scope of outerScopes) {
+      (scope.items || []).forEach((item, index) => this._addItem(item, scope, true, index));
     }
+    (config.items || []).forEach((item, index) => this._addItem(item, config, false, index));
     this._bindGesture(this._button, config, action => this._runAction(action || { action: 'menu' }, config, true), config.secondary?.swipe_to_expand === true);
     this._wrapper.addEventListener('pointerenter', event => {
       if (event.pointerType !== 'mouse') return;
@@ -470,7 +502,10 @@ class CircleMenuCard extends HTMLElement {
     const entry = { node, icon, badge, item, scope, outer, index };
     this._entries.push(entry);
     this._wrapper.append(node);
-    this._bindGesture(node, item, action => this._runAction(action, item, false));
+    const gestures = !outer && item.secondary && !item.tap_action && !item.action
+      ? { ...item, action: { action: 'expand' } } : item;
+    if (outer && scope !== this._localConfig.secondary && scope.item_size !== undefined) node.classList.add('cm-context-size');
+    entry.cancelGesture = this._bindGesture(node, gestures, action => this._runAction(action, item, false));
   }
   _bindGesture(node, config, run, swipe = false) {
     let holdTimer = null, tapTimer = null, start = null, held = false, suppress = false;
@@ -506,8 +541,8 @@ class CircleMenuCard extends HTMLElement {
         const inwardY = dy * (this._position.startsWith('top') ? 1 : -1);
         if ((inwardX + inwardY) / Math.SQRT2 >= 30) {
           this._cancel(tapTimer); tapTimer = null; start = null;
-          this._open = true; this._outer = true;
-          this._syncOpen(); this._resetCloseTimer();
+          this._open = true;
+          this._selectOuter(this._localConfig.secondary || null, true);
         }
       } else start = null;
     });
@@ -530,14 +565,13 @@ class CircleMenuCard extends HTMLElement {
         event.preventDefault(); event.stopPropagation(); run(tap);
       }
     });
+    return cancel;
   }
   async _runAction(action, item, main) {
     if (!action || !this.isConnected) return;
     if (action.action === 'none') return;
-    if (!main) {
-      const entry = this._entries.find(entry => entry.item === item);
-      if (!entry || entry.node.hidden || !this._open || (entry.outer && !this._outer)) return;
-    }
+    const entry = main ? null : this._entries.find(entry => entry.item === item);
+    if (!main && (!entry || entry.node.hidden || !this._open || (entry.outer && (!this._outer || entry.scope !== this._outerScope)))) return;
     try {
       if (action.confirmation) {
         const confirmation = action.confirmation;
@@ -548,7 +582,7 @@ class CircleMenuCard extends HTMLElement {
       if (feedback) emit(this, 'haptic', feedback === true ? 'light' : feedback);
       switch (action.action) {
         case 'menu': this._toggle(); return;
-        case 'expand': this._expand(); return;
+        case 'expand': this._expand(entry); return;
         case 'navigate': {
           if (!action.navigation_path) throw new Error('navigation_path is required');
           const url = new URL(action.navigation_path, location.href);
@@ -590,6 +624,7 @@ class CircleMenuCard extends HTMLElement {
         }
         default: throw new Error('Unsupported action: ' + action.action);
       }
+      if (entry?.outer && (entry.scope !== this._outerScope || !this._outer)) return;
       if (item.close_on_action ?? this._localConfig.close_on_action) this._close();
       else this._resetCloseTimer();
     } catch (error) {
@@ -615,7 +650,8 @@ class CircleMenuCard extends HTMLElement {
       const positives = item.positive_states || scope.positive_states || this._localConfig.positive_states || POSITIVE_STATES;
       const state = states[ids[0]]?.state;
       const override = state !== undefined && own(item.states || {}, state) && record(item.states[state]) ? item.states[state] : {};
-      node.hidden = !(item.conditions || []).every(condition => matches(condition, states));
+      node.hidden = (entry.outer && scope !== this._outerScope) ||
+        !(item.conditions || []).every(condition => matches(condition, states));
       node.classList.toggle('active', ids.some(id => positives.includes(states[id]?.state)));
       node.title = override.alt || item.alt || 'Item ' + (entry.index + 1);
       node.setAttribute('aria-label', node.title);
@@ -630,6 +666,13 @@ class CircleMenuCard extends HTMLElement {
       setVar(node, '--cm-badge-color', record(badgeConfig) ? badgeConfig.color : undefined);
       setVar(node, '--cm-badge-background', record(badgeConfig) ? badgeConfig.background_color : undefined);
     }
+    // If a conditional parent disappears, its outer ring must no longer be actionable.
+    const parent = this._entries.find(entry => !entry.outer && entry.item.secondary && entry.item.secondary === this._outerScope);
+    if (parent?.node.hidden) {
+      this._selectOuter(this._localConfig.secondary || null, false);
+      return;
+    }
+    setVar(this._menu, '--cm-outer-color', this._outerScope?.menu_background_color);
     this._layout(); this._syncOpen();
   }
   _layout() {
@@ -638,7 +681,7 @@ class CircleMenuCard extends HTMLElement {
     const font = parseFloat(getComputedStyle(this._menu).fontSize) || 16;
     const button = positive(config.button_size, 3.5 * font);
     const diameter = positive(config.item_size, 3 * font);
-    const outerDiameter = positive(config.secondary?.item_size, diameter);
+    const outerDiameter = positive(this._outerScope?.item_size, diameter);
     const inner = this._entries.filter(entry => !entry.outer && !entry.node.hidden);
     const outer = this._entries.filter(entry => entry.outer && !entry.node.hidden);
     const first = layout(inner.length, config, 7 * font, diameter, config.item_size === undefined);
@@ -646,7 +689,7 @@ class CircleMenuCard extends HTMLElement {
     const firstEdge = Math.max(button / 2, first.radius + diameter / 2 + innerMargin);
     // Keep outer hit targets outside the inner disk, even with customized diameters.
     const outerMinimum = firstEdge + outerDiameter / 2 + 4;
-    const outerScope = { opening_angle: 80, ...(config.secondary || {}) };
+    const outerScope = { opening_angle: 80, ...(this._outerScope || {}) };
     const second = layout(outer.length, { ...outerScope, radius: Math.max(positive(outerScope.radius, 11.5 * font), outerMinimum) }, outerMinimum, outerDiameter, false);
     const secondEdge = second.radius + outerDiameter / 2 + innerMargin;
     setVar(this._menu, '--cm-inner-scale', firstEdge * 2 / button);
@@ -764,12 +807,13 @@ class CircleMenuCardEditor extends HTMLElement {
       if (customElements.get('ha-selector')) this._button(parent, 'Use Home Assistant action selector', () => this._change(path, { action: 'none' }, true));
     }
   }
-  _items(parent, path) {
+  _items(parent, path, outer) {
     const items = this._value(path) || [];
     items.forEach((item, index) => {
       const itemPath = [...path, index];
       const panel = element('details');
-      panel.open = false;
+      panel.setAttribute('data-item-path', JSON.stringify(itemPath));
+      panel.open = this._openItemPanels?.has(JSON.stringify(itemPath)) || false;
       panel.append(element('summary', null, (index + 1) + '. ' + (item.alt || item.icon || 'Menu item')));
       this._field(panel, [...itemPath, 'icon'], 'Icon', { selector: { icon: {} } });
       this._field(panel, [...itemPath, 'alt'], 'Label');
@@ -780,6 +824,26 @@ class CircleMenuCardEditor extends HTMLElement {
       this._action(panel, [...itemPath, 'hold_action'], 'Hold action');
       this._action(panel, [...itemPath, 'double_tap_action'], 'Double-tap action');
       for (const key of ['conditions', 'states', 'badge', 'positive_states']) this._field(panel, [...itemPath, key], key, { json: true });
+      if (!outer) {
+        const secondaryPath = [...itemPath, 'secondary'];
+        if (item.secondary) {
+          const secondary = element('details');
+          secondary.open = true;
+          secondary.append(element('summary', null, 'Own outer ring'));
+          secondary.append(element('p', null, 'With no tap action, this item opens its own ring. Set expand on any gesture to open it explicitly.'));
+          this._ring(secondary, secondaryPath, true);
+          this._button(secondary, 'Remove own outer ring', () => this._change(secondaryPath, undefined, true));
+          panel.append(secondary);
+        } else {
+          this._button(panel, 'Add own outer ring', () => {
+            const current = this._value(itemPath);
+            const next = { ...current, secondary: { items: [] } };
+            const tapKey = own(current, 'tap_action') ? 'tap_action' : 'action';
+            if (!current[tapKey] || current[tapKey].action === 'none') next[tapKey] = { action: 'expand' };
+            this._change(itemPath, next, true);
+          });
+        }
+      }
       const actions = element('div', 'buttons');
       if (index > 0) this._button(actions, '↑ Move up', () => { const next = [...this._value(path)]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; this._change(path, next, true); });
       if (index < items.length - 1) this._button(actions, '↓ Move down', () => { const next = [...this._value(path)]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; this._change(path, next, true); });
@@ -792,10 +856,11 @@ class CircleMenuCardEditor extends HTMLElement {
     for (const key of ['menu_background_color', 'item_background_color', 'item_active_color', 'icon_color']) this._field(parent, [...path, key], key, { color: true });
     for (const key of ['radius', 'item_size', 'opening_angle']) this._field(parent, [...path, key], key + (key === 'opening_angle' ? ' (degrees)' : ' (px)'), { type: 'number' });
     this._field(parent, [...path, 'positive_states'], 'Positive states (JSON)', { json: true });
-    this._items(parent, [...path, 'items']);
+    this._items(parent, [...path, 'items'], outer);
   }
   _render() {
     if (!this._config) return;
+    this._openItemPanels = new Set([...this.shadowRoot.querySelectorAll('details[data-item-path][open]')].map(panel => panel.getAttribute('data-item-path')));
     const style = element('style', null, ':host{display:block}.field{display:grid;gap:4px;margin:8px 0}input,select,textarea,button{font:inherit;color:var(--primary-text-color);background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:6px;padding:8px;box-sizing:border-box;max-width:100%}input[type=checkbox]{width:auto;justify-self:start}textarea{width:100%}button{cursor:pointer}details{padding:10px;border:1px solid var(--divider-color);border-radius:8px;margin:8px 0}summary{cursor:pointer;font-weight:600}.buttons{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.error{color:var(--error-color)}');
     const root = element('div');
     this._error = element('div', 'error'); this._error.setAttribute('role', 'alert'); root.append(this._error);

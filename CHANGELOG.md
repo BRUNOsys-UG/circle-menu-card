@@ -1,3 +1,9 @@
+# 2.0.0-beta.2
+
+- Every inner item may define a fully independent outer ring with its own geometry, colors, icons and actions.
+- Switch rings directly, toggle the selected ring, retain inner geometry and original explicit actions; edit nested rings visually.
+- Add contextual ring logic and browser regression coverage.
+
 # 2.0.0
 
 - Preserve the original one-ring menu and configuration; add an opt-in concentric outer ring with automatic, manual and swipe opening.
