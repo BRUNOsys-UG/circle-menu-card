@@ -204,7 +204,7 @@ The per-item ring supports `items`, `opacity`, `radius`, `item_size`, `opening_a
 | `item_background_color` | Optional default inactive item color. |
 | `secondary` | Optional outer ring: items, open, swipe_to_expand, opacity (default 0.8), radius, item_size, opening_angle, menu_background_color, icon_color, item_background_color, item_active_color, positive_states. |
 
-The outer ring radius is automatically increased enough to put its hit targets outside the inner disk. A larger number of items requires more screen space; on narrow displays, prefer a small number of frequently used inner actions and a compact outer ring. The card does not shrink touch targets or silently discard items to fit an arbitrarily large menu.
+The outer ring radius is automatically increased enough to put its hit targets outside the inner disk. Its buttons are centered radially between the two disk edges, with equal clearance on both sides and at least the inner ring's minimum margin. The inner ring's geometry is unchanged. A larger number of items requires more screen space; on narrow displays, prefer a small number of frequently used inner actions and a compact outer ring. The card does not shrink touch targets or silently discard items to fit an arbitrarily large menu.
 
 ### Actions
 

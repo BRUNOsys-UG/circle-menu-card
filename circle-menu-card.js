@@ -1,7 +1,7 @@
 /* Circle Menu Card v2 — dependency-free, backward-compatible Home Assistant card. */
 (() => {
 'use strict';
-const VERSION = '2.0.0-beta.3';
+const VERSION = '2.0.0-beta.4';
 const POSITIVE_STATES = [true, 'true', 'on', 'open', 'active', 'detected', 'occupied', 'unlocked', 'home', 'above_horizon', 'ready'];
 const POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
 const ACTIONS = ['none', 'menu', 'expand', 'navigate', 'call-service', 'perform-action', 'toggle', 'more-info', 'url'];
@@ -690,11 +690,13 @@ class CircleMenuCard extends HTMLElement {
     const first = layout(inner.length, config, 7 * font, diameter, config.item_size === undefined);
     const innerMargin = Math.max(1.125 * font, button / 2 - diameter / 2);
     const firstEdge = Math.max(button / 2, first.radius + diameter / 2 + innerMargin);
-    // Keep outer hit targets outside the inner disk, even with customized diameters.
-    const outerMinimum = firstEdge + outerDiameter / 2 + 4;
+    // Use the inner ring's margin as the minimum clearance on BOTH sides of the outer buttons.
+    const outerMinimum = firstEdge + outerDiameter / 2 + innerMargin;
     const outerScope = { opening_angle: 80, ...(this._outerScope || {}) };
     const second = layout(outer.length, { ...outerScope, radius: Math.max(positive(outerScope.radius, 11.5 * font), outerMinimum) }, outerMinimum, outerDiameter, false);
-    const secondEdge = second.radius + outerDiameter / 2 + innerMargin;
+    // The button center is exactly halfway between the two concentric disk edges.
+    // This also holds when a custom radius or item spacing requires a wider ring.
+    const secondEdge = 2 * second.radius - firstEdge;
     setVar(this._menu, '--cm-inner-scale', firstEdge * 2 / button);
     setVar(this._menu, '--cm-outer-scale', secondEdge * 2 / button);
     for (const [entries, ring, size] of [[inner, first, diameter], [outer, second, outerDiameter]]) {
@@ -703,9 +705,13 @@ class CircleMenuCard extends HTMLElement {
         const x = ring.radius * Math.cos(angle) * (this._position.endsWith('left') ? 1 : -1);
         const y = ring.radius * Math.sin(angle) * (this._position.startsWith('top') ? -1 : 1);
         setVar(entry.node, '--x', x + 'px'); setVar(entry.node, '--y', y + 'px');
+        if (entry.outer) {
+          // Center the outer hit target on the actual disk origin, not the legacy .2em offset.
+          setVar(entry.node, '--cm-item-offset', (button - size) / 2 + 'px');
+        }
         if (config.button_size !== undefined || config.item_size !== undefined || entry.scope.item_size !== undefined) {
           setVar(entry.node, '--cm-item-size', size + 'px');
-          setVar(entry.node, '--cm-item-offset', (button - size) / 2 - .05 * font + 'px');
+          if (!entry.outer) setVar(entry.node, '--cm-item-offset', (button - size) / 2 - .05 * font + 'px');
         }
       });
     }

@@ -1,3 +1,8 @@
+# 2.0.0-beta.4
+
+- Center outer menu buttons radially between the inner and outer disk boundaries, with equal clearance even for custom radii and sizes.
+- Preserve original inner ring geometry and add rendered browser clearance tests.
+
 # 2.0.0-beta.3
 
 - Outer ring background is 80% opaque by default, independently configurable for each ring. Inner ring and menu buttons remain unchanged.

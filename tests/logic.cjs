@@ -229,6 +229,32 @@ async function run(source, baseline) {
     }
     c.disconnectedCallback();
   });
+  check('outer buttons have equal radial clearance at both edges',()=>{
+    for (const config of [
+      {items:[serviceItem],secondary:{items:[serviceItem]}},
+      {items:[serviceItem,serviceItem,serviceItem],secondary:{radius:250,item_size:60,items:[serviceItem,serviceItem]}},
+      {items:Array(6).fill(serviceItem),secondary:{items:Array(8).fill(serviceItem)}},
+      {button_size:64,item_size:40,position:'top-left',items:[serviceItem],secondary:{item_size:50,items:[serviceItem]}},
+      {items:[{secondary:{radius:240,item_size:54,items:[serviceItem]}}]}
+    ]) {
+      const c=make(config); main(c).event('click');
+      if(!config.secondary) item(c).event('click');
+      const button=config.button_size??56;
+      const innerDiameter=config.item_size??48;
+      const firstEdge=Number(c._menu.style.getPropertyValue('--cm-inner-scale'))*button/2;
+      const secondEdge=Number(c._menu.style.getPropertyValue('--cm-outer-scale'))*button/2;
+      const margin=Math.max(18,button/2-innerDiameter/2);
+      for (const entry of c._entries.filter(e=>e.outer&&!e.node.hidden)) {
+        const size=entry.scope.item_size??innerDiameter;
+        const radius=Math.hypot(parseFloat(entry.node.style.getPropertyValue('--x')),parseFloat(entry.node.style.getPropertyValue('--y')));
+        const a=radius-size/2-firstEdge, b=secondEdge-radius-size/2;
+        assert(Math.abs(a-b)<1e-7,'unequal radial clearance');
+        assert(a>=margin-1e-7,'insufficient clearance');
+        same(parseFloat(entry.node.style.getPropertyValue('--cm-item-offset')),(button-size)/2,'centered origin');
+      }
+      c.disconnectedCallback();
+    }
+  });
   return passed;
 }
 module.exports = run;

@@ -94,6 +94,29 @@ def suite(browser, name):
     x,y=r["x"]+r["width"]/2,r["y"]+r["height"]/2
     new.mouse.move(x,y);new.mouse.down();new.mouse.move(x-55,y-55,steps=5);new.mouse.up()
     assert new.locator("circle-menu-card .circular-menu").evaluate("n=>n.classList.contains('cm-outer-open')")
+    # Measure actual rendered circles and outer buttons, not just the layout variables.
+    for config in (
+        {"items":[ITEM]*3,"secondary":{"items":[ITEM]*3}},
+        {"items":[ITEM]*3,"secondary":{"radius":240,"item_size":52,"items":[ITEM]*4}},
+        {"position":"top-left","button_size":64,"item_size":44,"items":[ITEM]*2,"secondary":{"item_size":50,"items":[ITEM]*4}},
+        {"items":[{"secondary":{"items":[ITEM]*3}}]},
+    ):
+        new.evaluate("cfg=>window.make(cfg)",config)
+        new.locator("circle-menu-card .floating-btn").click()
+        if "secondary" not in config:
+            new.locator("circle-menu-card .menu-item:not(.cm-outer)").click()
+        gaps=new.evaluate("""() => {
+          const root=card.shadowRoot, menu=root.querySelector('.circular-menu');
+          const base=root.querySelector('.floating-btn').getBoundingClientRect();
+          const cx=base.x+base.width/2,cy=base.y+base.height/2;
+          const edge=p=>{const s=getComputedStyle(menu,p);return parseFloat(s.width)/2*new DOMMatrix(s.transform).a};
+          const inner=edge('::after'),outer=edge('::before');
+          return [...root.querySelectorAll('.cm-outer:not([hidden])')].map(n=>{
+            const b=n.getBoundingClientRect(),r=Math.hypot(b.x+b.width/2-cx,b.y+b.height/2-cy);
+            return [r-b.width/2-inner,outer-r-b.width/2];
+          });
+        }""")
+        assert gaps and all(abs(a-b)<0.25 and a>=17.75 for a,b in gaps),gaps
     # Only the outer disk background is translucent; both rings' buttons stay opaque.
     new.evaluate("cfg=>window.make(cfg)",{"items":[ITEM],"secondary":{"items":[ITEM]}})
     new.locator("circle-menu-card .floating-btn").click()
