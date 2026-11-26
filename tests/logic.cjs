@@ -213,6 +213,22 @@ async function run(source, baseline) {
       let thrown=false;try{helpers.validate(cfg)}catch{thrown=true} assert(thrown,'invalid nested config accepted');
     }
   });
+  check('outer opacity defaults, per-item overrides, zero and validation',()=>{
+    const c=make({secondary:{items:[serviceItem]},items:[{secondary:{opacity:0,items:[serviceItem]}},{secondary:{opacity:0.6,items:[serviceItem]}}]});
+    const inner=c._entries.filter(e=>!e.outer);
+    const opacity=()=>c._menu.style.getPropertyValue('--cm-outer-opacity');
+    main(c).event('click'); same(opacity(),'0.8','default opacity');
+    inner[0].node.event('click'); same(opacity(),'0','zero opacity');
+    inner[1].node.event('click'); same(opacity(),'0.6','context opacity');
+    main(c).event('click'); main(c).event('click'); same(opacity(),'0.8','reset default');
+    c.setConfig({secondary:{opacity:1,items:[serviceItem]}}); same(opacity(),'1','opaque');
+    for(const value of [-0.1,1.1,'0.5',null]) {
+      for(const cfg of [{secondary:{opacity:value}},{items:[{secondary:{opacity:value}}]}]) {
+        let thrown=false;try{helpers.validate(cfg)}catch{thrown=true} assert(thrown,'invalid opacity');
+      }
+    }
+    c.disconnectedCallback();
+  });
   return passed;
 }
 module.exports = run;

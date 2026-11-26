@@ -1,3 +1,8 @@
+# 2.0.0-beta.3
+
+- Outer ring background is 80% opaque by default, independently configurable for each ring. Inner ring and menu buttons remain unchanged.
+- Add opacity control in visual editor and regression tests.
+
 # 2.0.0-beta.2
 
 - Every inner item may define a fully independent outer ring with its own geometry, colors, icons and actions.

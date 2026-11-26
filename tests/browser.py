@@ -94,10 +94,21 @@ def suite(browser, name):
     x,y=r["x"]+r["width"]/2,r["y"]+r["height"]/2
     new.mouse.move(x,y);new.mouse.down();new.mouse.move(x-55,y-55,steps=5);new.mouse.up()
     assert new.locator("circle-menu-card .circular-menu").evaluate("n=>n.classList.contains('cm-outer-open')")
+    # Only the outer disk background is translucent; both rings' buttons stay opaque.
+    new.evaluate("cfg=>window.make(cfg)",{"items":[ITEM],"secondary":{"items":[ITEM]}})
+    new.locator("circle-menu-card .floating-btn").click()
+    opacity=lambda pseudo: new.locator("circle-menu-card .circular-menu").evaluate("(n,p)=>getComputedStyle(n,p).opacity",pseudo)
+    assert opacity("::before")=="0.8"
+    assert opacity("::after")=="1"
+    assert new.locator("circle-menu-card .menu-item").evaluate_all("ns=>ns.every(n=>getComputedStyle(n).opacity==='1')")
+    new.evaluate("cfg=>window.make(cfg)",{"items":[ITEM],"secondary":{"opacity":0.65,"items":[ITEM]}})
+    new.locator("circle-menu-card .floating-btn").click()
+    assert opacity("::before")=="0.65"
+    assert opacity("::after")=="1"
     # Distinct outer rings are selected by inner buttons, without moving the latter.
     new.evaluate("cfg=>window.make(cfg)",{"items":[
         {"icon":"mdi:lightbulb","secondary":{"menu_background_color":"#aabbcc","items":[ITEM]}},
-        {"icon":"mdi:music","action":{"action":"expand"},"secondary":{"radius":240,"item_size":52,"menu_background_color":"#123456","items":[{"icon":"mdi:play","action":{"action":"more-info","entity":"media_player.b"}}]}}
+        {"icon":"mdi:music","action":{"action":"expand"},"secondary":{"radius":240,"item_size":52,"opacity":0.55,"menu_background_color":"#123456","items":[{"icon":"mdi:play","action":{"action":"more-info","entity":"media_player.b"}}]}}
     ]})
     main=new.locator("circle-menu-card .floating-btn")
     main.click()
@@ -113,6 +124,8 @@ def suite(browser, name):
     assert outer.locator("ha-icon").get_attribute("icon")=="mdi:play"
     assert [x.bounding_box() for x in inner.all()]==original
     assert new.locator("circle-menu-card .circular-menu").evaluate("n=>n.style.getPropertyValue('--cm-outer-color')")=="#123456"
+    assert opacity("::before")=="0.55"
+    assert opacity("::after")=="1"
     outer.click()
     assert new.evaluate("info.at(-1)")=="media_player.b"
     inner.nth(1).click()

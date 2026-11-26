@@ -152,6 +152,7 @@ items:
     alt: Lights
     secondary:
       menu_background_color: '#85651b'
+      opacity: 0.75
       radius: 200
       items:
         - icon: mdi:lightbulb
@@ -182,7 +183,9 @@ Tap Lights or Media to open that item's own outer ring. Tapping the selected inn
 
 If an item has no `action` or `tap_action`, its own ring opens on tap automatically. An explicitly configured action retains its meaning; use `action: { action: expand }` or assign expand to a hold or double-tap action to open the ring without replacing another gesture. An expand action on an inner item without its own ring still controls the global ring. An expand action on an outer item closes the current outer ring. Inactive groups cannot receive actions, and if a conditional inner item disappears its outer ring closes.
 
-The per-item ring supports `items`, `radius`, `item_size`, `opening_angle`, `menu_background_color`, `icon_color`, `item_background_color`, `item_active_color` and `positive_states`. Opening mode and swipe configuration belong to the global ring only. A third level is intentionally rejected. In the visual editor, choose **Add own outer ring** inside any inner item.
+The outer background has 80% opacity by default, leaving the inner ring and all buttons/icons unchanged. Set `opacity: 1` for an opaque background, or choose any number between 0 and 1. This option works on the global `secondary` and on each item's `secondary` independently.
+
+The per-item ring supports `items`, `opacity`, `radius`, `item_size`, `opening_angle`, `menu_background_color`, `icon_color`, `item_background_color`, `item_active_color` and `positive_states`. Opening mode and swipe configuration belong to the global ring only. A third level is intentionally rejected. In the visual editor, choose **Add own outer ring** inside any inner item.
 
 ### Additional card options
 
@@ -199,7 +202,7 @@ The per-item ring supports `items`, `radius`, `item_size`, `opening_angle`, `men
 | `haptic` | HA haptic feedback, false by default; true uses light, or supply an HA feedback type. |
 | `tap_action`, `hold_action`, `double_tap_action` | Optional actions on the main button. Default tap opens/closes the menu. Hold threshold 500 ms; double-tap window 260 ms. |
 | `item_background_color` | Optional default inactive item color. |
-| `secondary` | Optional outer ring: items, open, swipe_to_expand, radius, item_size, opening_angle, menu_background_color, icon_color, item_background_color, item_active_color, positive_states. |
+| `secondary` | Optional outer ring: items, open, swipe_to_expand, opacity (default 0.8), radius, item_size, opening_angle, menu_background_color, icon_color, item_background_color, item_active_color, positive_states. |
 
 The outer ring radius is automatically increased enough to put its hit targets outside the inner disk. A larger number of items requires more screen space; on narrow displays, prefer a small number of frequently used inner actions and a compact outer ring. The card does not shrink touch targets or silently discard items to fit an arbitrarily large menu.
 

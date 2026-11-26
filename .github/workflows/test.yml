@@ -42,15 +42,15 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Publish v2.0.0-beta.2 once
+      - name: Publish v2.0.0-beta.3 once
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view v2.0.0-beta.2 >/dev/null 2>&1; then
+          if gh release view v2.0.0-beta.3 >/dev/null 2>&1; then
             echo "Pre-release already exists; leaving it untouched."
           else
-            gh release create v2.0.0-beta.2 circle-menu-card.js \
+            gh release create v2.0.0-beta.3 circle-menu-card.js \
               --target "$GITHUB_SHA" --prerelease \
-              --title "Circle Menu Card v2.0.0-beta.2" \
-              --notes "Second v2 beta: independent outer ring per inner item, optional global ring, backwards-compatible v1 geometry, native HA actions and visual editor. Tested in Chromium and WebKit against a mocked HA interface; real HA and physical-device validation are not covered."
+              --title "Circle Menu Card v2.0.0-beta.3" \
+              --notes "Third v2 beta: configurable translucent outer ring backgrounds, independent outer rings per inner item and backwards-compatible v1 geometry. Tested in Chromium and WebKit against a mocked HA interface; real HA and physical-device validation are not covered."
           fi

@@ -1,6 +1,6 @@
 {
   "name": "@brunosys-ug/circle-menu-card",
-  "version": "2.0.0-beta.2",
+  "version": "2.0.0-beta.3",
   "description": "Circle menu for Home Assistant Lovelace UI",
   "main": "circle-menu-card.js",
   "private": true,

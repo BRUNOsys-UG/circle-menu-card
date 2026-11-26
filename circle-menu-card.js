@@ -1,7 +1,7 @@
 /* Circle Menu Card v2 — dependency-free, backward-compatible Home Assistant card. */
 (() => {
 'use strict';
-const VERSION = '2.0.0-beta.2';
+const VERSION = '2.0.0-beta.3';
 const POSITIVE_STATES = [true, 'true', 'on', 'open', 'active', 'detected', 'occupied', 'unlocked', 'home', 'above_horizon', 'ready'];
 const POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
 const ACTIONS = ['none', 'menu', 'expand', 'navigate', 'call-service', 'perform-action', 'toggle', 'more-info', 'url'];
@@ -135,6 +135,7 @@ const CSS_TEXT = `
           content: ''; display: block; position: absolute; top: 0; right: 0;
           width: var(--cm-button-size, 3.5em); height: var(--cm-button-size, 3.5em);
           border-radius: 50%; background: var(--cm-outer-color, var(--cm-menu-color, var(--primary-color)));
+          opacity: var(--cm-outer-opacity, 0.8);
           z-index: -4; visibility: hidden; pointer-events: none;
           transition: transform .3s ease, visibility 0s .3s;
         }
@@ -198,6 +199,7 @@ function validate(config) {
     }
   }
   for (const scope of scopes) {
+    if (scope !== config && scope.opacity !== undefined && (typeof scope.opacity !== 'number' || !Number.isFinite(scope.opacity) || scope.opacity < 0 || scope.opacity > 1)) throw new Error('Outer ring opacity must be a number between 0 and 1');
     if (scope.items !== undefined && !Array.isArray(scope.items)) throw new Error('items must be an array');
     if (scope.positive_states !== undefined && !Array.isArray(scope.positive_states)) throw new Error('positive_states must be an array');
     for (const key of ['radius', 'item_size', 'button_size', 'opening_angle']) {
@@ -673,6 +675,7 @@ class CircleMenuCard extends HTMLElement {
       return;
     }
     setVar(this._menu, '--cm-outer-color', this._outerScope?.menu_background_color);
+    setVar(this._menu, '--cm-outer-opacity', this._outerScope?.opacity ?? 0.8);
     this._layout(); this._syncOpen();
   }
   _layout() {
@@ -775,7 +778,7 @@ class CircleMenuCardEditor extends HTMLElement {
     } else {
       input = element('input');
       input.type = options.type || 'text';
-      if (options.type === 'number') { input.min = '0'; input.step = 'any'; }
+      if (options.type === 'number') { input.min = String(options.min ?? 0); input.step = String(options.step ?? 'any'); if (options.max !== undefined) input.max = String(options.max); }
       if (options.type === 'checkbox') input.checked = value === true;
       else input.value = value ?? '';
       input.addEventListener('change', () => this._change(path, options.type === 'checkbox' ? input.checked : options.type === 'number' ? (input.value === '' ? undefined : Number(input.value)) : input.value, options.rebuild));
@@ -853,6 +856,7 @@ class CircleMenuCardEditor extends HTMLElement {
     this._button(parent, 'Add item', () => this._change(path, [...(this._value(path) || []), { icon: 'mdi:circle-outline', action: { action: 'none' } }], true));
   }
   _ring(parent, path, outer) {
+    if (outer) this._field(parent, [...path, 'opacity'], 'Background opacity (0–1; default 0.8)', { type: 'number', min: 0, max: 1, step: 'any' });
     for (const key of ['menu_background_color', 'item_background_color', 'item_active_color', 'icon_color']) this._field(parent, [...path, key], key, { color: true });
     for (const key of ['radius', 'item_size', 'opening_angle']) this._field(parent, [...path, key], key + (key === 'opening_angle' ? ' (degrees)' : ' (px)'), { type: 'number' });
     this._field(parent, [...path, 'positive_states'], 'Positive states (JSON)', { json: true });
