@@ -36,7 +36,7 @@ const CSS_TEXT = `
           box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
         }
         .circular-menu menu ha-icon, .circular-menu menu ha-icon ha-svg-icon {
-          color: var(--cm-item-icon-color, var(--cm-icon-color, var(--text-primary-color))); fill: currentColor;
+          color: var(--cm-item-icon-color, inherit); fill: var(--cm-item-icon-color, var(--cm-icon-color, var(--text-primary-color)));
         }
         .circular-menu .floating-btn ha-icon {
           font-size: 1.3em;
@@ -217,7 +217,7 @@ function angles(count, openingAngle) {
     return Array.from({ length: count }, (_, i) => 140 / count * i - 90 + offset);
   }
   if (count === 1) return [-45];
-  const span = openingAngle ?? 105;
+  const span = openingAngle ?? 80;
   return Array.from({ length: count }, (_, i) => -45 - span / 2 + span * i / (count - 1));
 }
 function minimumRadius(values, diameter) {
@@ -620,7 +620,7 @@ class CircleMenuCard extends HTMLElement {
       node.title = override.alt || item.alt || 'Item ' + (entry.index + 1);
       node.setAttribute('aria-label', node.title);
       icon.setAttribute('icon', override.icon || item.icon || states[ids[0]]?.attributes?.icon || 'mdi:circle-outline');
-      setVar(node, '--cm-item-icon-color', override.icon_color ?? item.icon_color ?? scope.icon_color);
+      setVar(node, '--cm-item-icon-color', override.icon_color ?? item.icon_color ?? (entry.outer ? scope.icon_color : undefined));
       setVar(node, '--cm-item-background', override.background_color ?? item.background_color ?? scope.item_background_color);
       setVar(node, '--cm-active-color', override.background_color ?? item.active_color ?? scope.item_active_color);
       const badgeConfig = own(override, 'badge') ? override.badge : item.badge;
@@ -646,7 +646,7 @@ class CircleMenuCard extends HTMLElement {
     const firstEdge = Math.max(button / 2, first.radius + diameter / 2 + innerMargin);
     // Keep outer hit targets outside the inner disk, even with customized diameters.
     const outerMinimum = firstEdge + outerDiameter / 2 + 4;
-    const outerScope = config.secondary || {};
+    const outerScope = { opening_angle: 80, ...(config.secondary || {}) };
     const second = layout(outer.length, { ...outerScope, radius: Math.max(positive(outerScope.radius, 11.5 * font), outerMinimum) }, outerMinimum, outerDiameter, false);
     const secondEdge = second.radius + outerDiameter / 2 + innerMargin;
     setVar(this._menu, '--cm-inner-scale', firstEdge * 2 / button);

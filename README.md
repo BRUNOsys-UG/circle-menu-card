@@ -148,7 +148,7 @@ With `secondary.open: auto` (the default), both rings open with one tap. With `m
 | `button_size`, `item_size` | Pixel diameters; defaults are 3.5em and 3em. |
 | `offset_x`, `offset_y` | Pixel distance from the selected screen edges; defaults to 1em. |
 | `radius` | Requested item center radius in pixels; default 7em. Increased automatically where needed to prevent overlap. |
-| `opening_angle` | Custom arc span in degrees, greater than 0 and at most 180. Without it, 1–4 items use the original coordinates; larger lists use a 105° span. |
+| `opening_angle` | Custom arc span in degrees, greater than 0 and at most 180. Without it, 1–4 items use the original coordinates; larger lists and the outer ring use an inward 80° span. |
 | `safe_area` | Opt-in iOS safe-area offsets, default false. |
 | `close_icon` | Default mdi:close. |
 | `close_on_action` | Close after successful item action, default false (v1 behavior). |

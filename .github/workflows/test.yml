@@ -8,7 +8,7 @@ permissions:
   contents: read
 jobs:
   logic:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +17,7 @@ jobs:
       - run: npm ci
       - run: npm test
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -34,3 +34,23 @@ jobs:
       - run: python tests/browser.py
         env:
           BROWSERS: ${{ matrix.browser }}
+  prerelease:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/v2'
+    needs: [logic, browser]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish v2.0.0-beta.1 once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v2.0.0-beta.1 >/dev/null 2>&1; then
+            echo "Pre-release already exists; leaving it untouched."
+          else
+            gh release create v2.0.0-beta.1 circle-menu-card.js \
+              --target "$GITHUB_SHA" --prerelease \
+              --title "Circle Menu Card v2.0.0-beta.1" \
+              --notes "First v2 beta: optional concentric outer ring, backwards-compatible v1 geometry, native HA actions and visual editor. Tested in Chromium and WebKit against a mocked HA interface; real HA and physical-device validation are not covered."
+          fi
