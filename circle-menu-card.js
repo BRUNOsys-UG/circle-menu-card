@@ -6,7 +6,170 @@ const POSITIVE_STATES = [true, 'true', 'on', 'open', 'active', 'detected', 'occu
 const POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'];
 const ACTIONS = ['none', 'menu', 'expand', 'navigate', 'call-service', 'perform-action', 'toggle', 'more-info', 'url'];
 const HA_ACTIONS = ['none', 'navigate', 'perform-action', 'toggle', 'more-info', 'url'];
-const CSS_TEXT = "\n        .circular-menu {\n          position: fixed;\n          bottom: 1em;\n          right: 1em;\n          display: flex;\n          flex-direction: column;\n          align-items: center;\n          z-index: 1024;\n        }\n        .circular-menu .floating-btn {\n          display: block;\n          width: var(--cm-button-size, 3.5em);\n          height: var(--cm-button-size, 3.5em);\n          border-radius: 50%;\n          background-color: var(--cm-button-color, var(--primary-color));\n          box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);\n          color: var(--cm-icon-color, var(--text-primary-color)) !important;\n          text-align: center;\n          line-height: 2.6;\n          cursor: pointer;\n          outline: 0;\n        }\n        .circular-menu.active .floating-btn {\n          box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);\n        }\n        .circular-menu .floating-btn:active {\n          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);\n        }\n        .circular-menu menu ha-icon, .circular-menu menu ha-icon ha-svg-icon {\n          color: var(--cm-item-icon-color, var(--cm-icon-color, var(--text-primary-color))); fill: currentColor;\n        }\n        .circular-menu .floating-btn ha-icon {\n          font-size: 1.3em;\n          transition: transform .2s;\n        }\n        .circular-menu.active .floating-btn a {\n          transform: rotate(-45deg);\n        }\n        .circular-menu:after {\n          display: block;\n          content: ' ';\n          width: var(--cm-button-size, 3.5em);\n          height: var(--cm-button-size, 3.5em);\n          border-radius: 50%;\n          position: absolute;\n          top: 0;\n          right: 0;\n          z-index: -2;\n          background-color: var(--cm-menu-color, var(--primary-color));\n          transition: all .3s ease;\n        }\n        .circular-menu.active:after {\n          transform: scale(var(--cm-inner-scale, 5.5));\n          transition-timing-function: cubic-bezier(0.68, 1.55, 0.265, 1);\n        }\n        .circular-menu .items-wrapper {\n          padding: 0;\n          margin: 0;\n        }\n        .circular-menu .menu-item {\n          position: absolute;\n          top: .2em;\n          right: .2em;\n          z-index: -1;\n          display: block;\n          text-decoration: none;\n          color: white;\n          font-size: 1em;\n          width: var(--cm-item-size, 3em);\n          height: var(--cm-item-size, 3em);\n          border-radius: 50%;\n          text-align: center;\n          line-height: 2.8;\n          background-color: var(--cm-item-background, rgba(0, 0, 0, 0.1));\n          transition: transform .3s ease, background .2s ease;\n          cursor: pointer;\n        }\n        .circular-menu .menu-item:hover {\n          background-color: rgba(0, 0, 0, 0.3);\n        }\n        .circular-menu .menu-item.active {\n          background-color: var(--cm-active-color, var(--cm-item-active-color, var(--accent-color)));\n        }\n        .circular-menu.active .menu-item {\n          transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);\n        }\n        .circular-menu.circular-menu-left {\n          right: auto;\n          left: 1em;\n        }\n        .circular-menu.circular-menu-left.active .floating-btn a {\n          transform: rotate(45deg);\n        }\n        .circular-menu.active ha-icon {\n          transition: all 3s ease;\n        }\n        .circular-menu.active .floating-btn ha-icon.icon {\n          display: none;\n        }\n        .circular-menu.active .floating-btn ha-icon.close {\n          display: block;\n        }\n        .circular-menu.active .menu-item { transform: translate(var(--x), var(--y)); }\n      \n        .circular-menu { bottom: var(--cm-offset-y, 1em); right: var(--cm-offset-x, 1em); }\n        .circular-menu.circular-menu-left { left: var(--cm-offset-x, 1em); }\n        .circular-menu.cm-top { bottom: auto; top: var(--cm-offset-y, 1em); }\n        .circular-menu.cm-safe { bottom: max(var(--cm-offset-y, 1em), env(safe-area-inset-bottom)); right: max(var(--cm-offset-x, 1em), env(safe-area-inset-right)); }\n        .circular-menu.cm-safe.circular-menu-left { right: auto; left: max(var(--cm-offset-x, 1em), env(safe-area-inset-left)); }\n        .circular-menu.cm-safe.cm-top { bottom: auto; top: max(var(--cm-offset-y, 1em), env(safe-area-inset-top)); }\n        .circular-menu .floating-btn { touch-action: manipulation; }\n        .circular-menu .floating-btn ha-icon.close { display: none; }\n        .circular-menu.active .floating-btn ha-icon.close { display: inline-block; }\n        .circular-menu .floating-btn:focus-visible, .circular-menu .menu-item:focus-visible { outline: 2px solid var(--primary-text-color, currentColor); outline-offset: 2px; }\n        .circular-menu .menu-item {\n          top: var(--cm-item-offset, .2em); right: var(--cm-item-offset, .2em);\n          visibility: hidden; pointer-events: none; touch-action: manipulation;\n          transition: transform .3s ease, background .2s ease, visibility 0s .3s;\n        }\n        .circular-menu.active .menu-item:not([hidden]) {\n          visibility: visible; pointer-events: auto;\n          transition-delay: 0s; transform: translate(var(--x), var(--y));\n        }\n        .circular-menu .menu-item[hidden] { display: none; }\n        .circular-menu::before {\n          content: ''; display: block; position: absolute; top: 0; right: 0;\n          width: var(--cm-button-size, 3.5em); height: var(--cm-button-size, 3.5em);\n          border-radius: 50%; background: var(--cm-outer-color, var(--cm-menu-color, var(--primary-color)));\n          z-index: -4; visibility: hidden; pointer-events: none;\n          transition: transform .3s ease, visibility 0s .3s;\n        }\n        .circular-menu.active.cm-outer-open::before {\n          visibility: visible; pointer-events: auto; transition-delay: 0s;\n          transform: scale(var(--cm-outer-scale));\n          transition-timing-function: cubic-bezier(0.68, 1.55, 0.265, 1);\n        }\n        .circular-menu .menu-item.cm-outer { z-index: -3; }\n        .circular-menu.active:not(.cm-outer-open) .menu-item.cm-outer {\n          visibility: hidden; pointer-events: none; transform: none; transition-delay: 0s, 0s, .3s;\n        }\n        .circular-menu .menu-item.cm-outer { background-color: var(--cm-item-background, rgba(0, 0, 0, 0.1)); }\n        .circular-menu .menu-item.cm-outer:hover { background-color: rgba(0, 0, 0, 0.3); }\n        .circular-menu .menu-item.cm-outer.active { background-color: var(--cm-active-color, var(--cm-item-active-color, var(--accent-color))); }\n        .circular-menu .menu-item .cm-badge {\n          position: absolute; top: -.25em; right: -.25em; border-radius: 1em; min-width: 1.3em;\n          padding: 0 .25em; font-size: .7em; line-height: 1.4; text-align: center;\n          color: var(--cm-badge-color, white); background: var(--cm-badge-background, var(--error-color, #db4437));\n          box-sizing: border-box; pointer-events: none;\n        }\n        .circular-menu .cm-badge[hidden] { display: none; }\n        .circular-menu.cm-custom-size .floating-btn,\n        .circular-menu.cm-custom-size .menu-item { display: flex; align-items: center; justify-content: center; }\n        .circular-menu.cm-custom-size .menu-item[hidden] { display: none; }\n        .circular-menu.cm-custom-size.active .floating-btn ha-icon.close { display: inline-block; }\n        .cm-error { position: fixed; bottom: 5em; right: 1em; max-width: min(24em, 85vw);\n          background: var(--card-background-color, white); color: var(--error-color, #b00020);\n          padding: .75em; border-radius: .5em; z-index: 1025; }\n        .cm-error[hidden] { display: none; }\n        @media (prefers-reduced-motion: reduce) {\n          .circular-menu::before, .circular-menu::after, .circular-menu .menu-item,\n          .circular-menu ha-icon { transition-duration: 0s !important; transition-delay: 0s !important; }\n        }\n";
+const CSS_TEXT = `
+        .circular-menu {
+          position: fixed;
+          bottom: 1em;
+          right: 1em;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          z-index: 1024;
+        }
+        .circular-menu .floating-btn {
+          display: block;
+          width: var(--cm-button-size, 3.5em);
+          height: var(--cm-button-size, 3.5em);
+          border-radius: 50%;
+          background-color: var(--cm-button-color, var(--primary-color));
+          box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+          color: var(--cm-icon-color, var(--text-primary-color)) !important;
+          text-align: center;
+          line-height: 2.6;
+          cursor: pointer;
+          outline: 0;
+        }
+        .circular-menu.active .floating-btn {
+          box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
+        }
+        .circular-menu .floating-btn:active {
+          box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.4);
+        }
+        .circular-menu menu ha-icon, .circular-menu menu ha-icon ha-svg-icon {
+          color: var(--cm-item-icon-color, var(--cm-icon-color, var(--text-primary-color))); fill: currentColor;
+        }
+        .circular-menu .floating-btn ha-icon {
+          font-size: 1.3em;
+          transition: transform .2s;
+        }
+        .circular-menu.active .floating-btn a {
+          transform: rotate(-45deg);
+        }
+        .circular-menu:after {
+          display: block;
+          content: ' ';
+          width: var(--cm-button-size, 3.5em);
+          height: var(--cm-button-size, 3.5em);
+          border-radius: 50%;
+          position: absolute;
+          top: 0;
+          right: 0;
+          z-index: -2;
+          background-color: var(--cm-menu-color, var(--primary-color));
+          transition: all .3s ease;
+        }
+        .circular-menu.active:after {
+          transform: scale(var(--cm-inner-scale, 5.5));
+          transition-timing-function: cubic-bezier(0.68, 1.55, 0.265, 1);
+        }
+        .circular-menu .items-wrapper {
+          padding: 0;
+          margin: 0;
+        }
+        .circular-menu .menu-item {
+          position: absolute;
+          top: .2em;
+          right: .2em;
+          z-index: -1;
+          display: block;
+          text-decoration: none;
+          color: white;
+          font-size: 1em;
+          width: var(--cm-item-size, 3em);
+          height: var(--cm-item-size, 3em);
+          border-radius: 50%;
+          text-align: center;
+          line-height: 2.8;
+          background-color: var(--cm-item-background, rgba(0, 0, 0, 0.1));
+          transition: transform .3s ease, background .2s ease;
+          cursor: pointer;
+        }
+        .circular-menu .menu-item:hover {
+          background-color: rgba(0, 0, 0, 0.3);
+        }
+        .circular-menu .menu-item.active {
+          background-color: var(--cm-active-color, var(--cm-item-active-color, var(--accent-color)));
+        }
+        .circular-menu.active .menu-item {
+          transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .circular-menu.circular-menu-left {
+          right: auto;
+          left: 1em;
+        }
+        .circular-menu.circular-menu-left.active .floating-btn a {
+          transform: rotate(45deg);
+        }
+        .circular-menu.active ha-icon {
+          transition: all 3s ease;
+        }
+        .circular-menu.active .floating-btn ha-icon.icon {
+          display: none;
+        }
+        .circular-menu.active .floating-btn ha-icon.close {
+          display: block;
+        }
+        .circular-menu.active .menu-item { transform: translate(var(--x), var(--y)); }
+      
+        .circular-menu { bottom: var(--cm-offset-y, 1em); right: var(--cm-offset-x, 1em); }
+        .circular-menu.circular-menu-left { left: var(--cm-offset-x, 1em); }
+        .circular-menu.cm-top { bottom: auto; top: var(--cm-offset-y, 1em); }
+        .circular-menu.cm-safe { bottom: max(var(--cm-offset-y, 1em), env(safe-area-inset-bottom)); right: max(var(--cm-offset-x, 1em), env(safe-area-inset-right)); }
+        .circular-menu.cm-safe.circular-menu-left { right: auto; left: max(var(--cm-offset-x, 1em), env(safe-area-inset-left)); }
+        .circular-menu.cm-safe.cm-top { bottom: auto; top: max(var(--cm-offset-y, 1em), env(safe-area-inset-top)); }
+        .circular-menu .floating-btn { touch-action: manipulation; }
+        .circular-menu .floating-btn ha-icon.close { display: none; }
+        .circular-menu.active .floating-btn ha-icon.close { display: inline-block; }
+        .circular-menu .floating-btn:focus-visible, .circular-menu .menu-item:focus-visible { outline: 2px solid var(--primary-text-color, currentColor); outline-offset: 2px; }
+        .circular-menu .menu-item {
+          top: var(--cm-item-offset, .2em); right: var(--cm-item-offset, .2em);
+          visibility: hidden; pointer-events: none; touch-action: manipulation;
+          transition: transform .3s ease, background .2s ease, visibility 0s .3s;
+        }
+        .circular-menu.active .menu-item:not([hidden]) {
+          visibility: visible; pointer-events: auto;
+          transition-delay: 0s; transform: translate(var(--x), var(--y));
+        }
+        .circular-menu .menu-item[hidden] { display: none; }
+        .circular-menu::before {
+          content: ''; display: block; position: absolute; top: 0; right: 0;
+          width: var(--cm-button-size, 3.5em); height: var(--cm-button-size, 3.5em);
+          border-radius: 50%; background: var(--cm-outer-color, var(--cm-menu-color, var(--primary-color)));
+          z-index: -4; visibility: hidden; pointer-events: none;
+          transition: transform .3s ease, visibility 0s .3s;
+        }
+        .circular-menu.active.cm-outer-open::before {
+          visibility: visible; pointer-events: auto; transition-delay: 0s;
+          transform: scale(var(--cm-outer-scale));
+          transition-timing-function: cubic-bezier(0.68, 1.55, 0.265, 1);
+        }
+        .circular-menu .menu-item.cm-outer { z-index: -3; }
+        .circular-menu.active:not(.cm-outer-open) .menu-item.cm-outer {
+          visibility: hidden; pointer-events: none; transform: none; transition-delay: 0s, 0s, .3s;
+        }
+        .circular-menu .menu-item.cm-outer { background-color: var(--cm-item-background, rgba(0, 0, 0, 0.1)); }
+        .circular-menu .menu-item.cm-outer:hover { background-color: rgba(0, 0, 0, 0.3); }
+        .circular-menu .menu-item.cm-outer.active { background-color: var(--cm-active-color, var(--cm-item-active-color, var(--accent-color))); }
+        .circular-menu .menu-item .cm-badge {
+          position: absolute; top: -.25em; right: -.25em; border-radius: 1em; min-width: 1.3em;
+          padding: 0 .25em; font-size: .7em; line-height: 1.4; text-align: center;
+          color: var(--cm-badge-color, white); background: var(--cm-badge-background, var(--error-color, #db4437));
+          box-sizing: border-box; pointer-events: none;
+        }
+        .circular-menu .cm-badge[hidden] { display: none; }
+        .circular-menu.cm-custom-size .floating-btn,
+        .circular-menu.cm-custom-size .menu-item { display: flex; align-items: center; justify-content: center; }
+        .circular-menu.cm-custom-size .menu-item[hidden] { display: none; }
+        .circular-menu.cm-custom-size.active .floating-btn ha-icon.close { display: inline-block; }
+        .cm-error { position: fixed; bottom: 5em; right: 1em; max-width: min(24em, 85vw);
+          background: var(--card-background-color, white); color: var(--error-color, #b00020);
+          padding: .75em; border-radius: .5em; z-index: 1025; }
+        .cm-error[hidden] { display: none; }
+        @media (prefers-reduced-motion: reduce) {
+          .circular-menu::before, .circular-menu::after, .circular-menu .menu-item,
+          .circular-menu ha-icon { transition-duration: 0s !important; transition-delay: 0s !important; }
+        }
+`;
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -62,7 +225,7 @@ function minimumRadius(values, diameter) {
   const delta = Math.min(...values.slice(1).map((value, index) => Math.abs(value - values[index])));
   return (diameter + 4) / (2 * Math.sin(delta * Math.PI / 360));
 }
-function layout(count, scope, font, fallback, diameter, legacy) {
+function layout(count, scope, fallback, diameter, legacy) {
   const values = angles(count, scope.opening_angle);
   const requested = positive(scope.radius, fallback);
   const radius = legacy && scope.radius === undefined && scope.opening_angle === undefined && count <= 4
@@ -219,7 +382,7 @@ class CircleMenuCard extends HTMLElement {
   _close() {
     this._open = false; this._outer = false; this._hovering = false;
     this._cancel(this._closeTimer); this._closeTimer = null;
-    for (const cancel of this._gestures) cancel();
+    for (const cancel of this._gestures) cancel(false);
     this._syncOpen();
   }
   _toggle() {
@@ -269,6 +432,7 @@ class CircleMenuCard extends HTMLElement {
     setVar(this._menu, '--cm-button-size', length(config.button_size));
     this._button = element('a', 'floating-btn');
     this._button.setAttribute('role', 'button'); this._button.tabIndex = 0;
+    if (config.secondary?.swipe_to_expand === true) this._button.style.touchAction = 'none';
     const icon = element('ha-icon', 'icon');
     icon.setAttribute('icon', config.icon || 'mdi:menu');
     const closeIcon = element('ha-icon', 'close');
@@ -285,7 +449,7 @@ class CircleMenuCard extends HTMLElement {
       if (!scope) continue;
       (scope.items || []).forEach((item, index) => this._addItem(item, scope, outer, index));
     }
-    this._bindGesture(this._button, config, action => this._runAction(action || { action: 'menu' }, config, true));
+    this._bindGesture(this._button, config, action => this._runAction(action || { action: 'menu' }, config, true), config.secondary?.swipe_to_expand === true);
     this._wrapper.addEventListener('pointerenter', event => {
       if (event.pointerType !== 'mouse') return;
       this._hovering = true; this._resetCloseTimer();
@@ -308,19 +472,21 @@ class CircleMenuCard extends HTMLElement {
     this._wrapper.append(node);
     this._bindGesture(node, item, action => this._runAction(action, item, false));
   }
-  _bindGesture(node, config, run) {
+  _bindGesture(node, config, run, swipe = false) {
     let holdTimer = null, tapTimer = null, start = null, held = false, suppress = false;
     const tap = config.tap_action || config.action;
     const hold = config.hold_action;
     const double = config.double_tap_action;
     const cancelHold = () => { this._cancel(holdTimer); holdTimer = null; start = null; };
-    const cancel = () => {
-      cancelHold(); this._cancel(tapTimer); tapTimer = null; held = false; suppress = false;
+    const cancel = (reset = true) => {
+      cancelHold(); this._cancel(tapTimer); tapTimer = null;
+      if (reset) { held = false; suppress = false; }
     };
     this._gestures.push(cancel);
     node.addEventListener('pointerdown', event => {
       if (event.button !== 0 || !event.isPrimary) return;
       cancelHold(); held = false; suppress = false; start = [event.clientX, event.clientY];
+      if (swipe && node.setPointerCapture) { try { node.setPointerCapture(event.pointerId); } catch (_) { /* Synthetic pointer events have no active capture. */ } }
       if (hold && hold.action !== 'none') {
         holdTimer = this._later(() => {
           holdTimer = null; held = true;
@@ -330,9 +496,20 @@ class CircleMenuCard extends HTMLElement {
       }
     });
     node.addEventListener('pointermove', event => {
-      if (start && Math.hypot(event.clientX - start[0], event.clientY - start[1]) > 12) {
-        suppress = true; cancelHold();
-      }
+      if (!start) return;
+      const dx = event.clientX - start[0], dy = event.clientY - start[1];
+      if (Math.hypot(dx, dy) <= 12) return;
+      suppress = true;
+      this._cancel(holdTimer); holdTimer = null;
+      if (swipe) {
+        const inwardX = dx * (this._position.endsWith('left') ? 1 : -1);
+        const inwardY = dy * (this._position.startsWith('top') ? 1 : -1);
+        if ((inwardX + inwardY) / Math.SQRT2 >= 30) {
+          this._cancel(tapTimer); tapTimer = null; start = null;
+          this._open = true; this._outer = true;
+          this._syncOpen(); this._resetCloseTimer();
+        }
+      } else start = null;
     });
     node.addEventListener('pointerup', cancelHold);
     node.addEventListener('pointercancel', () => { suppress = true; cancelHold(); });
@@ -357,7 +534,10 @@ class CircleMenuCard extends HTMLElement {
   async _runAction(action, item, main) {
     if (!action || !this.isConnected) return;
     if (action.action === 'none') return;
-    if (!main && (!this._open || (this._entries.find(entry => entry.item === item)?.outer && !this._outer))) return;
+    if (!main) {
+      const entry = this._entries.find(entry => entry.item === item);
+      if (!entry || entry.node.hidden || !this._open || (entry.outer && !this._outer)) return;
+    }
     try {
       if (action.confirmation) {
         const confirmation = action.confirmation;
@@ -461,13 +641,13 @@ class CircleMenuCard extends HTMLElement {
     const outerDiameter = positive(config.secondary?.item_size, diameter);
     const inner = this._entries.filter(entry => !entry.outer && !entry.node.hidden);
     const outer = this._entries.filter(entry => entry.outer && !entry.node.hidden);
-    const first = layout(inner.length, config, font, 7 * font, diameter, config.item_size === undefined);
+    const first = layout(inner.length, config, 7 * font, diameter, config.item_size === undefined);
     const innerMargin = Math.max(1.125 * font, button / 2 - diameter / 2);
     const firstEdge = Math.max(button / 2, first.radius + diameter / 2 + innerMargin);
     // Keep outer hit targets outside the inner disk, even with customized diameters.
     const outerMinimum = firstEdge + outerDiameter / 2 + 4;
     const outerScope = config.secondary || {};
-    const second = layout(outer.length, { ...outerScope, radius: Math.max(positive(outerScope.radius, 11.5 * font), outerMinimum) }, font, outerMinimum, outerDiameter, false);
+    const second = layout(outer.length, { ...outerScope, radius: Math.max(positive(outerScope.radius, 11.5 * font), outerMinimum) }, outerMinimum, outerDiameter, false);
     const secondEdge = second.radius + outerDiameter / 2 + innerMargin;
     setVar(this._menu, '--cm-inner-scale', firstEdge * 2 / button);
     setVar(this._menu, '--cm-outer-scale', secondEdge * 2 / button);
@@ -529,7 +709,7 @@ class CircleMenuCardEditor extends HTMLElement {
     if (options.selector && customElements.get('ha-selector')) {
       input = element('ha-selector');
       input.hass = this._hass; input.selector = options.selector;
-      input.value = value; input.label = label;
+      input.value = options.displayValue !== undefined ? options.displayValue : value; input.label = label;
       input.addEventListener('value-changed', event => {
         event.stopPropagation();
         this._change(path, event.detail.value, options.rebuild);
@@ -557,16 +737,27 @@ class CircleMenuCardEditor extends HTMLElement {
       else input.value = value ?? '';
       input.addEventListener('change', () => this._change(path, options.type === 'checkbox' ? input.checked : options.type === 'number' ? (input.value === '' ? undefined : Number(input.value)) : input.value, options.rebuild));
     }
-    row.append(input); parent.append(row);
+    row.append(input);
+    if (options.color) {
+      const picker = element('input'); picker.type = 'color';
+      picker.setAttribute('aria-label', label + ' color picker');
+      picker.value = /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#3498db';
+      picker.addEventListener('change', () => { input.value = picker.value; this._change(path, picker.value); });
+      row.append(picker);
+    }
+    parent.append(row);
   }
   _button(parent, title, action) {
     const button = element('button', null, title); button.type = 'button'; button.addEventListener('click', action); parent.append(button);
   }
   _action(parent, path, label) {
     const value = this._value(path);
-    const custom = value?.action === 'menu' || value?.action === 'expand' || value?.action === 'call-service';
+    const custom = value?.action === 'menu' || value?.action === 'expand';
     if (!custom && customElements.get('ha-selector')) {
-      this._field(parent, path, label, { selector: { ui_action: { actions: HA_ACTIONS } }, json: true });
+      const displayValue = value?.action === 'call-service'
+        ? { ...value, action: 'perform-action', perform_action: value.service, data: value.service_data || value.data }
+        : value;
+      this._field(parent, path, label, { selector: { ui_action: { actions: HA_ACTIONS } }, json: true, displayValue });
       this._button(parent, 'Use custom action', () => this._change(path, { action: 'expand' }, true));
     } else {
       this._field(parent, path, label + ' (JSON)', { json: true });
@@ -583,21 +774,22 @@ class CircleMenuCardEditor extends HTMLElement {
       this._field(panel, [...itemPath, 'icon'], 'Icon', { selector: { icon: {} } });
       this._field(panel, [...itemPath, 'alt'], 'Label');
       this._field(panel, [...itemPath, 'entity'], 'Entity', { selector: { entity: {} } });
-      for (const key of ['icon_color', 'background_color', 'active_color']) this._field(panel, [...itemPath, key], key);
+      for (const key of ['icon_color', 'background_color', 'active_color']) this._field(panel, [...itemPath, key], key, { color: true });
+      for (const key of ['close_on_action', 'haptic']) this._field(panel, [...itemPath, key], key + ' (JSON: true/false or blank to inherit)', { json: true });
       this._action(panel, [...itemPath, own(item, 'tap_action') ? 'tap_action' : 'action'], 'Tap action');
       this._action(panel, [...itemPath, 'hold_action'], 'Hold action');
       this._action(panel, [...itemPath, 'double_tap_action'], 'Double-tap action');
       for (const key of ['conditions', 'states', 'badge', 'positive_states']) this._field(panel, [...itemPath, key], key, { json: true });
       const actions = element('div', 'buttons');
-      if (index > 0) this._button(actions, '↑ Move up', () => { const next = [...items]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; this._change(path, next, true); });
-      if (index < items.length - 1) this._button(actions, '↓ Move down', () => { const next = [...items]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; this._change(path, next, true); });
-      this._button(actions, 'Remove', () => this._change(path, items.filter((_, i) => i !== index), true));
+      if (index > 0) this._button(actions, '↑ Move up', () => { const next = [...this._value(path)]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; this._change(path, next, true); });
+      if (index < items.length - 1) this._button(actions, '↓ Move down', () => { const next = [...this._value(path)]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; this._change(path, next, true); });
+      this._button(actions, 'Remove', () => this._change(path, this._value(path).filter((_, i) => i !== index), true));
       panel.append(actions); parent.append(panel);
     });
-    this._button(parent, 'Add item', () => this._change(path, [...items, { icon: 'mdi:circle-outline', action: { action: 'none' } }], true));
+    this._button(parent, 'Add item', () => this._change(path, [...(this._value(path) || []), { icon: 'mdi:circle-outline', action: { action: 'none' } }], true));
   }
   _ring(parent, path, outer) {
-    for (const key of ['menu_background_color', 'item_background_color', 'item_active_color', 'icon_color']) this._field(parent, [...path, key], key);
+    for (const key of ['menu_background_color', 'item_background_color', 'item_active_color', 'icon_color']) this._field(parent, [...path, key], key, { color: true });
     for (const key of ['radius', 'item_size', 'opening_angle']) this._field(parent, [...path, key], key + (key === 'opening_angle' ? ' (degrees)' : ' (px)'), { type: 'number' });
     this._field(parent, [...path, 'positive_states'], 'Positive states (JSON)', { json: true });
     this._items(parent, [...path, 'items']);
@@ -612,7 +804,7 @@ class CircleMenuCardEditor extends HTMLElement {
     this._field(root, ['close_icon'], 'Close icon', { selector: { icon: {} } });
     this._field(root, ['position'], 'Position', { choices: [['', 'Legacy left setting'], ...POSITIONS.map(value => [value, value])] });
     this._field(root, ['left'], 'Legacy left position', { type: 'checkbox' });
-    for (const key of ['button_color']) this._field(root, [key], key);
+    for (const key of ['button_color']) this._field(root, [key], key, { color: true });
     for (const key of ['button_size', 'offset_x', 'offset_y', 'auto_close']) this._field(root, [key], key + (key === 'auto_close' ? ' (ms)' : ' (px)'), { type: 'number' });
     for (const key of ['safe_area', 'close_on_action', 'haptic']) this._field(root, [key], key, { type: 'checkbox' });
     const gestures = element('details'); gestures.append(element('summary', null, 'Main button actions'));
@@ -623,6 +815,7 @@ class CircleMenuCardEditor extends HTMLElement {
     const outer = element('details'); outer.open = Boolean(this._config.secondary); outer.append(element('summary', null, 'Outer ring'));
     if (this._config.secondary) {
       this._field(outer, ['secondary', 'open'], 'Opening mode', { choices: [['auto', 'Together with inner ring'], ['manual', 'Expand action']], defaultValue: 'auto' });
+      this._field(outer, ['secondary', 'swipe_to_expand'], 'Swipe inward to open outer ring', { type: 'checkbox' });
       this._ring(outer, ['secondary'], true);
       this._button(outer, 'Remove outer ring', () => this._change(['secondary'], undefined, true));
     } else this._button(outer, 'Add outer ring', () => this._change(['secondary'], { open: 'auto', items: [] }, true));
