@@ -130,10 +130,10 @@ def suite(browser, name):
     assert new.evaluate("edited.items[1].alt")=="Edited"
     assert new.evaluate("edited.items[1].extra")=="keep"
     # Configure a contextual ring in the actual editor and retain the original item.
-    panels.first.locator("summary").click()
+    if not panels.first.evaluate("n=>n.open"):
+        panels.first.locator("summary").click()
     panels.first.get_by_role("button",name="Add own outer ring").click()
     assert new.evaluate("edited.items[0].action.action")=="expand"
-    own_ring=new.locator("circle-menu-card-editor details").filter(has=new.locator("summary",has_text="Own outer ring"))
     ring_summary=new.locator("circle-menu-card-editor summary").filter(has_text="Own outer ring")
     assert ring_summary.count()==1
     ring_summary.locator("..").get_by_role("button",name="Add item",exact=True).click()
