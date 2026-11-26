@@ -1,3 +1,11 @@
+# 2.0.0
+
+- Preserve the original one-ring menu and configuration; add an opt-in concentric outer ring with automatic, manual and swipe opening.
+- Add configurable geometry, additional positions, item colors, entity state overrides, conditions, badges, HA actions and optional gestures.
+- Add a visual configuration editor with native HA selectors and editable ring items.
+- Fix closed-state close icon, action duplication, timers, lifecycle, external JSON races/errors and duplicate entity highlights; remove unsafe dynamic HTML interpolation.
+- Add dependency-free logic tests and browser regression tests for the original geometry.
+
 ### [1.0.3](https://github.com/bhuebschen/circle-menu-card/compare/v1.0.2...v1.0.3) (2024-05-27)
 
 * Menu items can show the state of an entity
